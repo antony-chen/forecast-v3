@@ -15,6 +15,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from sklearn.preprocessing import MinMaxScaler
 
+from data_utils import build_predictions_table
 from Main_24hr_MLP_forwardonly_rollingtrain import (
     Config,
     FORECAST_INDICES,
@@ -434,15 +435,19 @@ def main():
         recs = sorted(recs, key=lambda r: pd.Timestamp(r["dec_start"]))
         out_path = OUTPUT_DIR / f"{plot_profile}_{TARGET_YEAR}_month{month:02d}_{CHECKPOINT_NAME}_probabilistic.png"
         plot_month(recs, month, out_path, plot_profile, CHECKPOINT_NAME, global_ylim=global_ylim)
+        predictions_path = OUTPUT_DIR / f"{plot_profile}_{TARGET_YEAR}_month{month:02d}_{CHECKPOINT_NAME}_predictions.csv"
+        build_predictions_table(recs, plot_profile).to_csv(predictions_path, index=False)
         summary_rows.append({
             "month": month,
             "weeks_in_figure": len(recs),
             "file": str(out_path),
+            "predictions_file": str(predictions_path),
             "first_decoder_start": str(recs[0]["dec_start"]),
             "last_decoder_start": str(recs[-1]["dec_start"]),
             "split_labels": ",".join(sorted({r['split'] for r in recs})),
         })
         print(f"[SAVED] {out_path}")
+        print(f"[SAVED] {predictions_path}")
 
     pd.DataFrame(summary_rows).to_csv(
         OUTPUT_DIR / f"{plot_profile}_{TARGET_YEAR}_{CHECKPOINT_NAME}_monthly_manifest.csv",
