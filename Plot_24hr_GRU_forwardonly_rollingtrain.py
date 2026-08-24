@@ -4,6 +4,7 @@ import json
 import os
 from calendar import month_name
 from collections import defaultdict
+from dataclasses import fields as dataclass_fields
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -72,8 +73,11 @@ def build_cfg_from_run(run_dir: Path) -> Config:
         use_horizon_weighting=bool(cfg_json["use_horizon_weighting"]),
         use_peak_loss=bool(cfg_json["use_peak_loss"]),
     )
+    field_names = {f.name for f in dataclass_fields(cfg)}
     for k, v in cfg_json.items():
-        if hasattr(cfg, k):
+        # Only overwrite actual dataclass fields, never Config methods that
+        # might share a name with an informational config.json key.
+        if k in field_names:
             setattr(cfg, k, v)
     return cfg
 

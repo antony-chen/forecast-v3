@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 from collections import defaultdict
+from dataclasses import fields as dataclass_fields
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -64,8 +65,14 @@ def build_cfg_from_run(run_dir: Path) -> Config:
         cfg_json = json.load(f)
 
     cfg = Config()
+    field_names = {f.name for f in dataclass_fields(cfg)}
     for k, v in cfg_json.items():
-        if hasattr(cfg, k):
+        # Only overwrite actual dataclass fields. config.json also stores
+        # informational keys (e.g. "split_years", the list of years used for
+        # this run) whose names can collide with Config *methods* of the same
+        # name (Config.split_years()) -- hasattr() would match those too and
+        # clobber the method with data, breaking every later call to it.
+        if k in field_names:
             setattr(cfg, k, v)
     return cfg
 
